@@ -33,5 +33,8 @@
   "commands.twitchspawn.test.not_found": "§4>> No ruleset associated with {0}",
   "commands.twitchspawn.test.success": "§a>> Successfully queued rules for {0}",
 
-  "errors.twitchspawn.loading": "Cannot load TwitchSpawn"
+  "errors.twitchspawn.loading": "Cannot load TwitchSpawn",
+
+  "commands.twitchspawn.toggle_stramer_rule.enabled": "§3>> Successfully enabled {0} rules",
+  "commands.twitchspawn.toggle_stramer_rule.disabled": "§4>> Disabled {0} rules!"
 }

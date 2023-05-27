@@ -53,7 +53,7 @@ public class RulesConfig {
         return new TSLRuleset(script);
     }
 
-    private static String readScript(String filepath) {
+    public static String readScript(String filepath) {
         try {
             return FileUtils.readFileToString(new File(filepath), StandardCharsets.UTF_8);
 

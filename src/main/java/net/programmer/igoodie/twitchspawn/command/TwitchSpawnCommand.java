@@ -31,6 +31,7 @@ import net.programmer.igoodie.twitchspawn.tslanguage.parser.TSLSyntaxError;
 import net.programmer.igoodie.twitchspawn.tslanguage.parser.TSLTokenizer;
 import net.programmer.igoodie.twitchspawn.util.MCPHelpers;
 
+import java.io.File;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -44,6 +45,10 @@ public class TwitchSpawnCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         for (String commandName : COMMAND_NAMES) {
             LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal(commandName);
+
+            root.then(Commands.literal("toggle_rule")
+                    .then(CommandArguments.streamer("streamer_nick"))
+                    .executes(TwitchSpawnCommand::toggleMyRuleModule));
 
             root.then(Commands.literal("status").executes(TwitchSpawnCommand::statusModule));
             root.then(Commands.literal("start").executes(TwitchSpawnCommand::startModule));
@@ -81,6 +86,35 @@ public class TwitchSpawnCommand {
     }
 
     /* ------------------------------------------------------------ */
+
+    public static int toggleMyRuleModule(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+
+        String streamer = context.getArgument("streamer_nick", String.class);
+        String streamerFile = ConfigManager.CONFIG_DIR_PATH + File.separator + "rules." + streamer + ".tsl";
+
+        File enabledFile = new File(streamerFile);
+
+        if (enabledFile != null) {
+            enabledFile.renameTo(new File(streamerFile + ".disabled"));
+            ConfigManager.RULESET_COLLECTION.removeRuleset(streamer);
+            context.getSource().sendSuccess(new TranslatableComponent("commands.twitchspawn.toggle_stramer_rule.enabled", streamer), true);
+            return 1;
+        }
+
+        File disabledFile = new File(streamerFile + ".disabled");
+
+        if (disabledFile != null) {
+            disabledFile.renameTo(new File(streamerFile));
+            ConfigManager.RULESET_COLLECTION.addRuleset(streamer);
+            context.getSource().sendSuccess(new TranslatableComponent("commands.twitchspawn.toggle_stramer_rule.disabled", streamer), true);
+            return 1;
+        }
+
+        context.getSource().sendFailure(new TranslatableComponent("commands.twitchspawn.test.not_found", streamer));
+
+        return 1;
+    }
+
 
     public static int statusModule(CommandContext<CommandSourceStack> context) {
         String translationKey = TwitchSpawn.TRACE_MANAGER.isRunning() ?

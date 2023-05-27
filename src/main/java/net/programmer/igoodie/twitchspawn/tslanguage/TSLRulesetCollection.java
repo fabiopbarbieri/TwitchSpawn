@@ -2,13 +2,15 @@ package net.programmer.igoodie.twitchspawn.tslanguage;
 
 import net.programmer.igoodie.twitchspawn.TwitchSpawn;
 import net.programmer.igoodie.twitchspawn.configuration.ConfigManager;
+import net.programmer.igoodie.twitchspawn.configuration.RulesConfig;
+import net.programmer.igoodie.twitchspawn.eventqueue.EventQueue;
 import net.programmer.igoodie.twitchspawn.tslanguage.event.EventArguments;
 import net.programmer.igoodie.twitchspawn.tslanguage.event.TSLEvent;
 import net.programmer.igoodie.twitchspawn.tslanguage.event.TSLEventPair;
 import net.programmer.igoodie.twitchspawn.tslanguage.keyword.TSLEventKeyword;
 import net.programmer.igoodie.twitchspawn.util.CooldownBucket;
-import net.programmer.igoodie.twitchspawn.eventqueue.EventQueue;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -83,6 +85,27 @@ public class TSLRulesetCollection {
 
     public Set<String> getStreamers() {
         return streamerRulesets.keySet();
+    }
+
+    public void removeRuleset(String streamerNick) {
+        String streamerNickLower = streamerNick.toLowerCase();
+
+        if (streamerRulesets.containsKey(streamerNickLower)) {
+            streamerRulesets.remove(streamerNickLower);
+        }
+    }
+
+    public void addRuleset(String streamerNick) {
+        if (!hasStreamer(streamerNick)) {
+            try {
+                String script = RulesConfig.readScript(ConfigManager.CONFIG_DIR_PATH + File.separator + "rules." + streamerNick.toLowerCase() + ".tsl");
+                if (script != null) {
+                    streamerRulesets.put(streamerNick.toLowerCase(), new TSLRuleset(streamerNick, script));
+                }
+            } catch (Exception e) {
+                // do nothing
+            }
+        }
     }
 
     public TSLRuleset getRuleset(String streamerNick) {
