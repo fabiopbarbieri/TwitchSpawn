@@ -82,13 +82,20 @@ public class RulesConfig {
 
 
         for (String filename : directory.list()) {
+
+            // skip disabled files
+            if (filename.contains(".disabled")) {
+                continue;
+            }
+
             Matcher matcher = PATTERN.matcher(filename);
 
             if (matcher.find()) {
                 String streamer = matcher.group(1);
 
-                if (streamer.equalsIgnoreCase("default"))
+                if (streamer.equalsIgnoreCase("default")) {
                     continue; // Default tree won't be included
+                }
 
                 TwitchSpawn.LOGGER.info("Loaded rule set for {} ({})", streamer, filename);
                 String script = readScript(directoryPath + File.separator + filename);

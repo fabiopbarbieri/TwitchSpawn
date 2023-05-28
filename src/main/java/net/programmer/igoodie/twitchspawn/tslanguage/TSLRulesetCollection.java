@@ -95,10 +95,10 @@ public class TSLRulesetCollection {
         }
     }
 
-    public void addRuleset(String streamerNick) {
+    public void addRuleset(String streamerNick,File file) {
         if (!hasStreamer(streamerNick)) {
             try {
-                String script = RulesConfig.readScript(ConfigManager.CONFIG_DIR_PATH + File.separator + "rules." + streamerNick.toLowerCase() + ".tsl");
+                String script = RulesConfig.readScript(file.getAbsolutePath());
                 if (script != null) {
                     streamerRulesets.put(streamerNick.toLowerCase(), new TSLRuleset(streamerNick, script));
                 }

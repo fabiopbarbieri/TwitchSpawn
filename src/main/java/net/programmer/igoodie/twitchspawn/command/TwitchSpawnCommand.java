@@ -96,47 +96,44 @@ public class TwitchSpawnCommand {
             File directory = new File(ConfigManager.CONFIG_DIR_PATH);
             String streamerName = streamer.twitchNick.toLowerCase();
 
-
-            File streamerFile = new File(Objects.requireNonNull(Arrays.stream(Objects.requireNonNull(directory.list()))
+            String streamerFileName = Arrays.stream(Objects.requireNonNull(directory.list()))
                     .filter(file -> !"rules.default.tsl".equalsIgnoreCase(file))
                     .filter(file -> RulesConfig.PATTERN.matcher(file).find() || RulesConfig.PATTERN_DISABLED.matcher(file).find())
                     .findFirst()
-                    .orElse(null)));
+                    .orElse(null);
 
-            File enabledFile = new File(ConfigManager.CONFIG_DIR_PATH + File.separator + "rules." + streamer.twitchNick + ".tsl");
-            File disabledFile = new File(ConfigManager.CONFIG_DIR_PATH + File.separator + "rules." + streamer.twitchNick + ".tsl.disabled");
+            if (streamerFileName != null) {
 
-            TwitchSpawn.LOGGER.info("found file: {} {} {}", streamerFile.getName(), enabledFile.getName(), disabledFile.getName());
+                File enabledFile = new File(ConfigManager.CONFIG_DIR_PATH + File.separator + "rules." + streamer.twitchNick + ".tsl");
+                File disabledFile = new File(ConfigManager.CONFIG_DIR_PATH + File.separator + "rules." + streamer.twitchNick + ".tsl.disabled");
 
-            if (enabledFile.exists()) {
-                ConfigManager.RULESET_COLLECTION.removeRuleset(streamerName);
-                try {
-                    Files.copy(enabledFile.toPath(), disabledFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                    Files.deleteIfExists(enabledFile.toPath());
-                } catch (Exception e) {
-                    TwitchSpawn.LOGGER.error("tried to disable {} ruleset", streamerName);
-                    e.printStackTrace();
+                if (enabledFile.exists()) {
+                    ConfigManager.RULESET_COLLECTION.removeRuleset(streamerName);
+                    renameFile(enabledFile, disabledFile, "tried to disable {} ruleset", streamerName);
+                    context.getSource().sendSuccess(new TranslatableComponent("commands.twitchspawn.toggle_my_rule.disabled", streamerName), true);
+                    return 1;
                 }
-                context.getSource().sendSuccess(new TranslatableComponent("commands.twitchspawn.toggle_my_rule.disabled", streamerName), true);
-                return 1;
-            }
 
-
-            if (disabledFile.exists()) {
-                try {
-                    Files.copy(disabledFile.toPath(), enabledFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                    Files.deleteIfExists(disabledFile.toPath());
-                } catch (Exception e) {
-                    TwitchSpawn.LOGGER.error("tried to enable {} ruleset", streamerName);
-                    e.printStackTrace();
+                if (disabledFile.exists()) {
+                    renameFile(disabledFile, enabledFile, "tried to enable {} ruleset", streamerName);
+                    ConfigManager.RULESET_COLLECTION.addRuleset(streamerName, enabledFile);
+                    context.getSource().sendSuccess(new TranslatableComponent("commands.twitchspawn.toggle_my_rule.enabled", streamerName), true);
+                    return 1;
                 }
-                ConfigManager.RULESET_COLLECTION.addRuleset(streamerName);
-                context.getSource().sendSuccess(new TranslatableComponent("commands.twitchspawn.toggle_my_rule.enabled", streamerName), true);
-                return 1;
             }
         }
         context.getSource().sendFailure(new TranslatableComponent("commands.twitchspawn.toggle_my_rule.not_streamer"));
         return 0;
+    }
+
+    private static void renameFile(File from, File to, String errorMessage, String streamerName) {
+        try {
+            Files.copy(from.toPath(), to.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            Files.deleteIfExists(from.toPath());
+        } catch (Exception e) {
+            TwitchSpawn.LOGGER.error(errorMessage, streamerName);
+            e.printStackTrace();
+        }
     }
 
 
