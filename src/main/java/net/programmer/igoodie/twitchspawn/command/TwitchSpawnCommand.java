@@ -19,7 +19,6 @@ import net.programmer.igoodie.twitchspawn.TwitchSpawn;
 import net.programmer.igoodie.twitchspawn.TwitchSpawnLoadingErrors;
 import net.programmer.igoodie.twitchspawn.configuration.ConfigManager;
 import net.programmer.igoodie.twitchspawn.configuration.CredentialsConfig;
-import net.programmer.igoodie.twitchspawn.configuration.RulesConfig;
 import net.programmer.igoodie.twitchspawn.eventqueue.EventQueue;
 import net.programmer.igoodie.twitchspawn.tslanguage.TSLRuleset;
 import net.programmer.igoodie.twitchspawn.tslanguage.action.TSLAction;
@@ -31,11 +30,12 @@ import net.programmer.igoodie.twitchspawn.tslanguage.keyword.TSLEventKeyword;
 import net.programmer.igoodie.twitchspawn.tslanguage.parser.TSLParser;
 import net.programmer.igoodie.twitchspawn.tslanguage.parser.TSLSyntaxError;
 import net.programmer.igoodie.twitchspawn.tslanguage.parser.TSLTokenizer;
-import net.programmer.igoodie.twitchspawn.udl.FileUtil;
 import net.programmer.igoodie.twitchspawn.util.MCPHelpers;
 
-import java.io.File;
-import java.util.*;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public class TwitchSpawnCommand {
@@ -46,8 +46,7 @@ public class TwitchSpawnCommand {
         for (String commandName : COMMAND_NAMES) {
             LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal(commandName);
 
-            root.then(Commands.literal("toggle_my_rule")
-                    .executes(TwitchSpawnCommand::toggleMyRuleModule));
+            root.then(Commands.literal("toggle_myself").executes(TwitchSpawnCommand::toggleMyself));
 
             root.then(Commands.literal("status").executes(TwitchSpawnCommand::statusModule));
             root.then(Commands.literal("start").executes(TwitchSpawnCommand::startModule));
@@ -86,44 +85,36 @@ public class TwitchSpawnCommand {
 
     /* ------------------------------------------------------------ */
 
-    public static int toggleMyRuleModule(CommandContext<CommandSourceStack> context) {
+    public static int toggleMyself(CommandContext<CommandSourceStack> context) {
+
+        if (!TwitchSpawn.TRACE_MANAGER.isRunning()) {
+            context.getSource().sendFailure(new TranslatableComponent("commands.twitchspawn.status.off"));
+            return 0;
+        }
 
         String player = context.getSource().getTextName();
         CredentialsConfig.Streamer streamer = ConfigManager.CREDENTIALS.getStreamer(player);
 
         if (streamer != null) {
-            File directory = new File(ConfigManager.CONFIG_DIR_PATH);
+            String translationKey;
+            boolean isConnected = TwitchSpawn.TRACE_MANAGER.isStreamerConnected(player);
 
-            String playerFileName = Arrays.stream(Objects.requireNonNull(directory.list()))
-                    .filter(file -> !"rules.default.tsl".equalsIgnoreCase(file))
-                    .filter(file -> RulesConfig.PATTERN.matcher(file).find() || RulesConfig.PATTERN_DISABLED.matcher(file).find())
-                    .filter(file -> file.toLowerCase().contains("." + player.toLowerCase() + "."))
-                    .findFirst()
-                    .orElse(null);
 
-            if (playerFileName != null) {
-                playerFileName = playerFileName.replace(".disabled", "");
+            if (isConnected) {
+                TwitchSpawn.TRACE_MANAGER.disconnectStreamer(player);
+                translationKey = "commands.twitchspawn.toggle_myself.disabled";
 
-                File enabledFile = new File(ConfigManager.CONFIG_DIR_PATH + File.separator + playerFileName);
-                File disabledFile = new File(ConfigManager.CONFIG_DIR_PATH + File.separator + playerFileName + ".disabled");
-                TwitchSpawn.LOGGER.info("{} {}", enabledFile, disabledFile);
-                if (enabledFile.exists()) {
-                    ConfigManager.RULESET_COLLECTION.removeRuleset(streamer.twitchNick);
-                    FileUtil.renameFile(enabledFile, disabledFile, "tried to disable {} ruleset", streamer.twitchNick);
-                    context.getSource().sendSuccess(new TranslatableComponent("commands.twitchspawn.toggle_my_rule.disabled", streamer.twitchNick), true);
-                    return 1;
-                }
-
-                if (disabledFile.exists()) {
-                    FileUtil.renameFile(disabledFile, enabledFile, "tried to enable {} ruleset", streamer.twitchNick);
-                    ConfigManager.RULESET_COLLECTION.addRuleset(streamer.twitchNick, enabledFile);
-                    context.getSource().sendSuccess(new TranslatableComponent("commands.twitchspawn.toggle_my_rule.enabled", streamer.twitchNick), true);
-                    return 1;
-                }
+            } else {
+                TwitchSpawn.TRACE_MANAGER.connectStreamer(player);
+                translationKey = "commands.twitchspawn.toggle_myself.enabled";
             }
+
+            context.getSource().sendSuccess(new TranslatableComponent(translationKey), false);
+            return 1;
+        } else {
+            context.getSource().sendFailure(new TranslatableComponent("commands.twitchspawn.toggle_myself.not_streamer"));
+            return 0;
         }
-        context.getSource().sendFailure(new TranslatableComponent("commands.twitchspawn.toggle_my_rule.not_streamer"));
-        return 0;
     }
 
     public static int statusModule(CommandContext<CommandSourceStack> context) {

@@ -153,4 +153,7 @@ public class TraceManager {
         sockets.remove(nickname.toLowerCase());
     }
 
+    public boolean isStreamerConnected(String nickname) {
+        return sockets.containsKey(nickname.toLowerCase());
+    }
 }
