@@ -19,6 +19,7 @@ import net.programmer.igoodie.twitchspawn.TwitchSpawn;
 import net.programmer.igoodie.twitchspawn.TwitchSpawnLoadingErrors;
 import net.programmer.igoodie.twitchspawn.configuration.ConfigManager;
 import net.programmer.igoodie.twitchspawn.configuration.CredentialsConfig;
+import net.programmer.igoodie.twitchspawn.configuration.RulesConfig;
 import net.programmer.igoodie.twitchspawn.eventqueue.EventQueue;
 import net.programmer.igoodie.twitchspawn.tslanguage.TSLRuleset;
 import net.programmer.igoodie.twitchspawn.tslanguage.action.TSLAction;
@@ -34,10 +35,7 @@ import net.programmer.igoodie.twitchspawn.udl.FileUtil;
 import net.programmer.igoodie.twitchspawn.util.MCPHelpers;
 
 import java.io.File;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Stream;
 
 public class TwitchSpawnCommand {
@@ -94,21 +92,34 @@ public class TwitchSpawnCommand {
         CredentialsConfig.Streamer streamer = ConfigManager.CREDENTIALS.getStreamer(player);
 
         if (streamer != null) {
-            File enabledFile = new File(ConfigManager.CONFIG_DIR_PATH + File.separator + "rules." + player + ".tsl");
-            File disabledFile = new File(ConfigManager.CONFIG_DIR_PATH + File.separator + "rules." + player + ".tsl.disabled");
+            File directory = new File(ConfigManager.CONFIG_DIR_PATH);
 
-            if (enabledFile.exists()) {
-                ConfigManager.RULESET_COLLECTION.removeRuleset(streamer.twitchNick);
-                FileUtil.renameFile(enabledFile, disabledFile, "tried to disable {} ruleset", streamer.twitchNick);
-                context.getSource().sendSuccess(new TranslatableComponent("commands.twitchspawn.toggle_my_rule.disabled", streamer.twitchNick), true);
-                return 1;
-            }
+            String playerFileName = Arrays.stream(Objects.requireNonNull(directory.list()))
+                    .filter(file -> !"rules.default.tsl".equalsIgnoreCase(file))
+                    .filter(file -> RulesConfig.PATTERN.matcher(file).find() || RulesConfig.PATTERN_DISABLED.matcher(file).find())
+                    .filter(file -> file.toLowerCase().contains("." + player.toLowerCase() + "."))
+                    .findFirst()
+                    .orElse(null);
 
-            if (disabledFile.exists()) {
-                FileUtil.renameFile(disabledFile, enabledFile, "tried to enable {} ruleset", streamer.twitchNick);
-                ConfigManager.RULESET_COLLECTION.addRuleset(streamer.twitchNick, enabledFile);
-                context.getSource().sendSuccess(new TranslatableComponent("commands.twitchspawn.toggle_my_rule.enabled", streamer.twitchNick), true);
-                return 1;
+            if (playerFileName != null) {
+                playerFileName = playerFileName.replace(".disabled", "");
+
+                File enabledFile = new File(ConfigManager.CONFIG_DIR_PATH + File.separator + playerFileName);
+                File disabledFile = new File(ConfigManager.CONFIG_DIR_PATH + File.separator + playerFileName + ".disabled");
+                TwitchSpawn.LOGGER.info("{} {}", enabledFile, disabledFile);
+                if (enabledFile.exists()) {
+                    ConfigManager.RULESET_COLLECTION.removeRuleset(streamer.twitchNick);
+                    FileUtil.renameFile(enabledFile, disabledFile, "tried to disable {} ruleset", streamer.twitchNick);
+                    context.getSource().sendSuccess(new TranslatableComponent("commands.twitchspawn.toggle_my_rule.disabled", streamer.twitchNick), true);
+                    return 1;
+                }
+
+                if (disabledFile.exists()) {
+                    FileUtil.renameFile(disabledFile, enabledFile, "tried to enable {} ruleset", streamer.twitchNick);
+                    ConfigManager.RULESET_COLLECTION.addRuleset(streamer.twitchNick, enabledFile);
+                    context.getSource().sendSuccess(new TranslatableComponent("commands.twitchspawn.toggle_my_rule.enabled", streamer.twitchNick), true);
+                    return 1;
+                }
             }
         }
         context.getSource().sendFailure(new TranslatableComponent("commands.twitchspawn.toggle_my_rule.not_streamer"));
