@@ -108,7 +108,7 @@ public class TwitchSpawnCommand {
 
             TwitchSpawn.LOGGER.info("found file: {} {} {}", streamerFile.getName(), enabledFile.getName(), disabledFile.getName());
 
-            if (enabledFile != null && enabledFile.exists()) {
+            if (enabledFile.exists()) {
                 ConfigManager.RULESET_COLLECTION.removeRuleset(streamerName);
                 try {
                     Files.copy(enabledFile.toPath(), disabledFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
@@ -122,7 +122,7 @@ public class TwitchSpawnCommand {
             }
 
 
-            if (disabledFile != null && disabledFile.exists()) {
+            if (disabledFile.exists()) {
                 try {
                     Files.copy(disabledFile.toPath(), enabledFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
                     Files.deleteIfExists(disabledFile.toPath());
@@ -134,11 +134,9 @@ public class TwitchSpawnCommand {
                 context.getSource().sendSuccess(new TranslatableComponent("commands.twitchspawn.toggle_my_rule.enabled", streamerName), true);
                 return 1;
             }
-            TwitchSpawn.LOGGER.error("ERROR: {} {} {} {}", enabledFile.getAbsolutePath(), enabledFile.exists(), disabledFile.getAbsolutePath(), disabledFile.exists());
-        } else {
-            context.getSource().sendFailure(new TranslatableComponent("commands.twitchspawn.toggle_my_rule.not_streamer"));
         }
-        return 1;
+        context.getSource().sendFailure(new TranslatableComponent("commands.twitchspawn.toggle_my_rule.not_streamer"));
+        return 0;
     }
 
 
