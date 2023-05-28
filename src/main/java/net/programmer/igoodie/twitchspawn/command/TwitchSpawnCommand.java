@@ -30,11 +30,10 @@ import net.programmer.igoodie.twitchspawn.tslanguage.keyword.TSLEventKeyword;
 import net.programmer.igoodie.twitchspawn.tslanguage.parser.TSLParser;
 import net.programmer.igoodie.twitchspawn.tslanguage.parser.TSLSyntaxError;
 import net.programmer.igoodie.twitchspawn.tslanguage.parser.TSLTokenizer;
+import net.programmer.igoodie.twitchspawn.udl.FileUtil;
 import net.programmer.igoodie.twitchspawn.util.MCPHelpers;
 
 import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -100,13 +99,13 @@ public class TwitchSpawnCommand {
 
             if (enabledFile.exists()) {
                 ConfigManager.RULESET_COLLECTION.removeRuleset(streamer.twitchNick);
-                renameFile(enabledFile, disabledFile, "tried to disable {} ruleset", streamer.twitchNick);
+                FileUtil.renameFile(enabledFile, disabledFile, "tried to disable {} ruleset", streamer.twitchNick);
                 context.getSource().sendSuccess(new TranslatableComponent("commands.twitchspawn.toggle_my_rule.disabled", streamer.twitchNick), true);
                 return 1;
             }
 
             if (disabledFile.exists()) {
-                renameFile(disabledFile, enabledFile, "tried to enable {} ruleset", streamer.twitchNick);
+                FileUtil.renameFile(disabledFile, enabledFile, "tried to enable {} ruleset", streamer.twitchNick);
                 ConfigManager.RULESET_COLLECTION.addRuleset(streamer.twitchNick, enabledFile);
                 context.getSource().sendSuccess(new TranslatableComponent("commands.twitchspawn.toggle_my_rule.enabled", streamer.twitchNick), true);
                 return 1;
@@ -115,17 +114,6 @@ public class TwitchSpawnCommand {
         context.getSource().sendFailure(new TranslatableComponent("commands.twitchspawn.toggle_my_rule.not_streamer"));
         return 0;
     }
-
-    private static void renameFile(File from, File to, String errorMessage, String streamerName) {
-        try {
-            Files.copy(from.toPath(), to.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            Files.deleteIfExists(from.toPath());
-        } catch (Exception e) {
-            TwitchSpawn.LOGGER.error(errorMessage, streamerName);
-            e.printStackTrace();
-        }
-    }
-
 
     public static int statusModule(CommandContext<CommandSourceStack> context) {
         String translationKey = TwitchSpawn.TRACE_MANAGER.isRunning() ?
