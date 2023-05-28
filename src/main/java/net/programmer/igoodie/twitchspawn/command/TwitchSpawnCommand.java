@@ -19,7 +19,6 @@ import net.programmer.igoodie.twitchspawn.TwitchSpawn;
 import net.programmer.igoodie.twitchspawn.TwitchSpawnLoadingErrors;
 import net.programmer.igoodie.twitchspawn.configuration.ConfigManager;
 import net.programmer.igoodie.twitchspawn.configuration.CredentialsConfig;
-import net.programmer.igoodie.twitchspawn.configuration.RulesConfig;
 import net.programmer.igoodie.twitchspawn.eventqueue.EventQueue;
 import net.programmer.igoodie.twitchspawn.tslanguage.TSLRuleset;
 import net.programmer.igoodie.twitchspawn.tslanguage.action.TSLAction;
@@ -36,7 +35,10 @@ import net.programmer.igoodie.twitchspawn.util.MCPHelpers;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.*;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public class TwitchSpawnCommand {
@@ -87,39 +89,27 @@ public class TwitchSpawnCommand {
 
     /* ------------------------------------------------------------ */
 
-    public static int toggleMyRuleModule(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+    public static int toggleMyRuleModule(CommandContext<CommandSourceStack> context) {
 
-        String player = context.getSource().getPlayerOrException().getName().getString();
+        String player = context.getSource().getTextName();
         CredentialsConfig.Streamer streamer = ConfigManager.CREDENTIALS.getStreamer(player);
 
         if (streamer != null) {
-            File directory = new File(ConfigManager.CONFIG_DIR_PATH);
-            String streamerName = streamer.twitchNick.toLowerCase();
+            File enabledFile = new File(ConfigManager.CONFIG_DIR_PATH + File.separator + "rules." + player + ".tsl");
+            File disabledFile = new File(ConfigManager.CONFIG_DIR_PATH + File.separator + "rules." + player + ".tsl.disabled");
 
-            String streamerFileName = Arrays.stream(Objects.requireNonNull(directory.list()))
-                    .filter(file -> !"rules.default.tsl".equalsIgnoreCase(file))
-                    .filter(file -> RulesConfig.PATTERN.matcher(file).find() || RulesConfig.PATTERN_DISABLED.matcher(file).find())
-                    .findFirst()
-                    .orElse(null);
+            if (enabledFile.exists()) {
+                ConfigManager.RULESET_COLLECTION.removeRuleset(streamer.twitchNick);
+                renameFile(enabledFile, disabledFile, "tried to disable {} ruleset", streamer.twitchNick);
+                context.getSource().sendSuccess(new TranslatableComponent("commands.twitchspawn.toggle_my_rule.disabled", streamer.twitchNick), true);
+                return 1;
+            }
 
-            if (streamerFileName != null) {
-
-                File enabledFile = new File(ConfigManager.CONFIG_DIR_PATH + File.separator + "rules." + streamer.twitchNick + ".tsl");
-                File disabledFile = new File(ConfigManager.CONFIG_DIR_PATH + File.separator + "rules." + streamer.twitchNick + ".tsl.disabled");
-
-                if (enabledFile.exists()) {
-                    ConfigManager.RULESET_COLLECTION.removeRuleset(streamerName);
-                    renameFile(enabledFile, disabledFile, "tried to disable {} ruleset", streamerName);
-                    context.getSource().sendSuccess(new TranslatableComponent("commands.twitchspawn.toggle_my_rule.disabled", streamerName), true);
-                    return 1;
-                }
-
-                if (disabledFile.exists()) {
-                    renameFile(disabledFile, enabledFile, "tried to enable {} ruleset", streamerName);
-                    ConfigManager.RULESET_COLLECTION.addRuleset(streamerName, enabledFile);
-                    context.getSource().sendSuccess(new TranslatableComponent("commands.twitchspawn.toggle_my_rule.enabled", streamerName), true);
-                    return 1;
-                }
+            if (disabledFile.exists()) {
+                renameFile(disabledFile, enabledFile, "tried to enable {} ruleset", streamer.twitchNick);
+                ConfigManager.RULESET_COLLECTION.addRuleset(streamer.twitchNick, enabledFile);
+                context.getSource().sendSuccess(new TranslatableComponent("commands.twitchspawn.toggle_my_rule.enabled", streamer.twitchNick), true);
+                return 1;
             }
         }
         context.getSource().sendFailure(new TranslatableComponent("commands.twitchspawn.toggle_my_rule.not_streamer"));
