@@ -18,6 +18,9 @@ import java.util.regex.Pattern;
 
 public class RulesConfig {
 
+    public static final Pattern PATTERN = Pattern.compile("^rules\\.(\\w+)\\.tsl$");
+    public static final Pattern PATTERN_DISABLED = Pattern.compile("^rules\\.(\\w+)\\.tsl.disabled$");
+
     public static TSLRulesetCollection createRules(String directory) throws TSLSyntaxErrors {
         return new TSLRulesetCollection(
                 create(directory + File.separator + "rules.default.tsl"),
@@ -76,10 +79,10 @@ public class RulesConfig {
         List<TSLRuleset> trees = new LinkedList<>();
 
         String directoryPath = directory.toString();
-        Pattern pattern = Pattern.compile("^rules\\.(\\w+)\\.tsl$");
+
 
         for (String filename : directory.list()) {
-            Matcher matcher = pattern.matcher(filename);
+            Matcher matcher = PATTERN.matcher(filename);
 
             if (matcher.find()) {
                 String streamer = matcher.group(1);
@@ -98,6 +101,7 @@ public class RulesConfig {
 
     /* ------------------------------------- */
 
-    private RulesConfig() {} // Not instantiable
+    private RulesConfig() {
+    } // Not instantiable
 
 }

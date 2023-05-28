@@ -35,6 +35,7 @@
 
   "errors.twitchspawn.loading": "Cannot load TwitchSpawn",
 
-  "commands.twitchspawn.toggle_stramer_rule.enabled": "§3>> Successfully enabled {0} rules",
-  "commands.twitchspawn.toggle_stramer_rule.disabled": "§4>> Disabled {0} rules!"
+  "commands.twitchspawn.toggle_my_rule.enabled": "§3>> Successfully enabled {0} rules",
+  "commands.twitchspawn.toggle_my_rule.disabled": "§4>> Disabled {0} rules!",
+  "commands.twitchspawn.toggle_my_rule.not_streamer": "§4>> You are not a streamer!"
 }

@@ -189,6 +189,10 @@ public class CredentialsConfig {
         return streamer;
     }
 
+    public Streamer getStreamer(String player) {
+        return this.streamers.stream().filter(streamer -> streamer.minecraftNick.equalsIgnoreCase(player)).findFirst().orElse(null);
+    }
+
     /* ----------------------------------- */
 
     public static class Streamer {
