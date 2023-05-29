@@ -37,5 +37,11 @@
 
   "commands.twitchspawn.toggle_myself.enabled": "§3>> Connected!",
   "commands.twitchspawn.toggle_myself.disabled": "§4>> Disconnected!",
-  "commands.twitchspawn.toggle_myself.not_streamer": "§4>> You are not a streamer!"
+  "commands.twitchspawn.toggle_myself.not_streamer": "§4>> You are not a streamer!",
+
+  "commands.twitchspawn.togglestreamer.no_perm": "§4>> You do not have permission to toggle a streamer.",
+  "commands.twitchspawn.togglestreamer.not_found": "§4>> Streamer not found!",
+  "commands.twitchspawn.togglestreamer.player_offline": "§4>> {0} is offline!",
+  "commands.twitchspawn.togglestreamer.disabled": "§4>> {0} disconnected!",
+  "commands.twitchspawn.togglestreamer.enabled": "§3>> {0} connected!"
 }

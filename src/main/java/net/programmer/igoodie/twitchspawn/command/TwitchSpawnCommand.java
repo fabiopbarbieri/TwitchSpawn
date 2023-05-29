@@ -48,6 +48,11 @@ public class TwitchSpawnCommand {
 
             root.then(Commands.literal("toggle_myself").executes(TwitchSpawnCommand::toggleMyself));
 
+            root.then(Commands.literal("toggle_streamer")
+                    .then(CommandArguments.streamer("streamer_nick")
+                            .executes(context -> toggleStreamer(context, StreamerArgumentType.getStreamer(context, "streamer_nick"))))
+            );
+
             root.then(Commands.literal("status").executes(TwitchSpawnCommand::statusModule));
             root.then(Commands.literal("start").executes(TwitchSpawnCommand::startModule));
             root.then(Commands.literal("stop").executes(TwitchSpawnCommand::stopModule));
@@ -88,12 +93,12 @@ public class TwitchSpawnCommand {
     public static int toggleMyself(CommandContext<CommandSourceStack> context) {
 
         if (!TwitchSpawn.TRACE_MANAGER.isRunning()) {
-            context.getSource().sendFailure(new TranslatableComponent("commands.twitchspawn.status.off"));
+            context.getSource().sendSuccess(new TranslatableComponent("commands.twitchspawn.status.off"), false);
             return 0;
         }
 
         String player = context.getSource().getTextName();
-        CredentialsConfig.Streamer streamer = ConfigManager.CREDENTIALS.getStreamer(player);
+        CredentialsConfig.Streamer streamer = ConfigManager.CREDENTIALS.getStreamerFromPlayer(player);
 
         if (streamer != null) {
             String translationKey;
@@ -112,9 +117,61 @@ public class TwitchSpawnCommand {
             context.getSource().sendSuccess(new TranslatableComponent(translationKey), false);
             return 1;
         } else {
-            context.getSource().sendFailure(new TranslatableComponent("commands.twitchspawn.toggle_myself.not_streamer"));
+            context.getSource().sendSuccess(new TranslatableComponent("commands.twitchspawn.toggle_myself.not_streamer"), false);
             return 0;
         }
+    }
+
+    public static int toggleStreamer(CommandContext<CommandSourceStack> context, String streamerNick) {
+
+        if (!TwitchSpawn.TRACE_MANAGER.isRunning()) {
+            context.getSource().sendSuccess(new TranslatableComponent("commands.twitchspawn.status.off"), false);
+            return 0;
+        }
+
+        String sourceNickname = context.getSource().getTextName();
+
+        boolean isOp = TwitchSpawn.SERVER.isSingleplayer()
+                || Stream.of(TwitchSpawn.SERVER.getPlayerList().getOpNames())
+                .anyMatch(oppedPlayerName -> oppedPlayerName.equalsIgnoreCase(sourceNickname));
+
+        // If has no permission
+        if (!isOp && !ConfigManager.CREDENTIALS.hasPermission(sourceNickname)) {
+            context.getSource().sendSuccess(new TranslatableComponent("commands.twitchspawn.togglestreamer.no_perm"), true);
+            TwitchSpawn.LOGGER.info("{} tried to toggle streamer {}, but no permission", sourceNickname, streamerNick);
+            return 0;
+        }
+
+        CredentialsConfig.Streamer streamer = ConfigManager.CREDENTIALS.getStreamer(streamerNick);
+
+        if (streamer == null) {
+            context.getSource().sendSuccess(new TranslatableComponent("commands.twitchspawn.togglestreamer.not_found"), false);
+            return 0;
+        }
+
+        ServerPlayer player = TwitchSpawn.SERVER.getPlayerList().getPlayerByName(streamer.minecraftNick);
+
+        if (player == null) {
+            context.getSource().sendSuccess(new TranslatableComponent("commands.twitchspawn.togglestreamer.player_offline", streamer.minecraftNick), false);
+            return 0;
+        }
+
+        String translationKey;
+        boolean isConnected = TwitchSpawn.TRACE_MANAGER.isStreamerConnected(streamer.minecraftNick);
+
+        if (isConnected) {
+            TwitchSpawn.TRACE_MANAGER.disconnectStreamer(streamer.minecraftNick);
+            translationKey = "commands.twitchspawn.togglestreamer.disabled";
+
+        } else {
+            TwitchSpawn.TRACE_MANAGER.connectStreamer(streamer.minecraftNick);
+            translationKey = "commands.twitchspawn.togglestreamer.enabled";
+        }
+
+        context.getSource().sendSuccess(new TranslatableComponent(translationKey, streamerNick), true);
+        return 1;
+
+
     }
 
     public static int statusModule(CommandContext<CommandSourceStack> context) {

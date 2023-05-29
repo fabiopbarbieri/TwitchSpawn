@@ -189,9 +189,15 @@ public class CredentialsConfig {
         return streamer;
     }
 
-    public Streamer getStreamer(String player) {
+    public Streamer getStreamerFromPlayer(String player) {
         return this.streamers.stream().filter(streamer -> streamer.minecraftNick.equalsIgnoreCase(player)).findFirst().orElse(null);
     }
+
+    public Streamer getStreamer(String streamerNick) {
+        return this.streamers.stream().filter(streamer -> streamer.twitchNick.equalsIgnoreCase(streamerNick)).findFirst().orElse(null);
+    }
+
+
 
     /* ----------------------------------- */
 
@@ -212,7 +218,8 @@ public class CredentialsConfig {
         public String token = "YOUR_TOKEN_HERE";
         public String tokenChat = "YOUR_CHAT_TOKEN_HERE - Can be generated from https://twitchapps.com/tmi/";
 
-        public Streamer() {}
+        public Streamer() {
+        }
 
         public Streamer(int number) {
             this.minecraftNick += number;
@@ -242,16 +249,24 @@ public class CredentialsConfig {
         if (nickname.equals("@")) // Command block
             return true;
 
-        if (nickname.equalsIgnoreCase("Server")) // Dedicated server
+        if (isModerator(nickname))
             return true;
 
-        if (moderatorsMinecraft.stream()
-                .anyMatch(mod -> mod.equalsIgnoreCase(nickname)))
+        if (streamers.stream().anyMatch(streamer -> streamer.minecraftNick.equalsIgnoreCase(nickname))) {
             return true;
+        }
 
-        if (streamers.stream()
-                .anyMatch(streamer -> streamer.minecraftNick.equalsIgnoreCase(nickname)))
+        return false;
+    }
+
+    public boolean isModerator(String nickname) {
+        if (nickname.equalsIgnoreCase("Server")) { // Dedicated server
             return true;
+        }
+
+        if (moderatorsMinecraft.stream().anyMatch(mod -> mod.equalsIgnoreCase(nickname))) {
+            return true;
+        }
 
         return false;
     }
